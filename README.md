@@ -1,2 +1,3 @@
-# flask-docker-demo
-Demo project to develop and expose a flask api within a docker container
+# Flask Docker Demo
+
+Demo project to develop and expose a flask api within a docker container.
