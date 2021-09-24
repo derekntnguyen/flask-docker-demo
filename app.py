@@ -17,21 +17,34 @@ app = Flask(__name__)
 
 @dataclass
 class Scorecard:
-    name: str
-    age: int
-    is_alive: bool
-
-
-class ScorecardSchema(Schema):
-    name = fields.Str(required=True)
-    age = fields.Int(
-        required=True,
-        validate=validate.Range(
-            min=0, 
-            error="Cannot be a negative age",
-            ),
+    name: str = dataclasses.field(
+        metadata=desert.metadata(
+            fields.Str(
+                required=True, validate=validate.Length(min=1, error="Name field cannot be empty")
+            )
         )
-    is_alive = fields.Bool(required=True)
+    )
+    age: int = dataclasses.field(
+        metadata=desert.metadata(
+            fields.Int(
+                required=True,
+                validate=validate.Range(min=0, error="Age field cannot be negative"),
+            )
+        )
+    )
+    is_alive: bool = dataclasses.field(
+        metadata=desert.metadata(
+            fields.Bool(
+                required=True,
+            )
+        )
+    )
+
+    def __post_init__(self):
+        """
+        Test
+        """
+        self.age = self.age + 1
 
 
 @app.route("/ping", methods=["GET"])
@@ -43,14 +56,12 @@ def ping():
 @app.route("/predict", methods=["GET"])
 def predict():
     data = request.get_json()
-    
+    validated_response = desert.schema(Scorecard, meta={"unknown": EXCLUDE})
+
     try:
-        validated_response = ScorecardSchema(unknown=EXCLUDE).load(data)
+        policy = validated_response.load(data)
     except ValidationError as err:
         abort(jsonify(err.messages))
-
-
-    policy = Scorecard(**validated_response)
 
     return jsonify(policy.__dict__)
 
